@@ -1,0 +1,126 @@
+* {
+	border-radius: 16px;
+	border-width: 4px;
+	margin: 0px;
+	padding: 0px;
+	text-align: center;
+	vertical-align: middle;
+	font-family: Chicago;
+	font-size: 118%;
+}
+
+body {
+	border: none;
+	border-radius: 0px;
+	width: 100%;
+	height: 100%;
+	background-color: #FFFFFF;
+	text-align: center;
+	vertical-align: middle;
+}
+
+#display{
+	background-color: #CCCCFF;
+	border-style: solid;
+	height: 100%;
+	width: 100%;
+	font-size: larger;
+	font-weight: bold;
+	text-align: right;
+	margin: 0px;
+}
+
+#clearButton{
+	background-color: #ffcccc;
+	color: #000000;
+}
+
+#clearButton:HOVER{
+	background-color: #000000;
+	color: #FF0000;
+	border-color:  #FF0000;
+}
+
+#clearButton:ACTIVE{
+	background-color: #FF0000;
+	color: #FFFFFF;
+	border-color:  #FFFFFF;
+}
+
+#squareButton:FOCUS{
+}
+
+INPUT[TYPE=BUTTON] {
+	align: center;
+	width: 100%;
+	height: 100%;
+	text-align: center;
+	border-style: solid;
+	border-color: #000000;
+	background-color: #666666;
+	color: #FFFFFF;
+}
+
+INPUT[TYPE=BUTTON]:HOVER{
+	background-color: #000000;
+	color: #FFFFFF;
+}
+
+INPUT[TYPE=BUTTON]:ACTIVE{
+	background-color: #FFFFFF;
+	color: #000000;
+}
+
+INPUT[TYPE=BUTTON]:FOCUS{
+	border: double 8px;
+	border-color: #000000;
+	padding: 0px;
+	margin: 0px;
+	height: 110%;
+}
+
+TABLE {
+	width: 100%;
+	height: 100%;
+	align: center;
+	margin: 0px;
+	padding: 0px;
+	border: none;
+	border-radius: 0px;
+	background-color: #FFFFFF;
+	font-family: Arial;
+}
+
+TR {
+	margin: 0px;
+	padding: 0px;
+	border-style: none;
+	text-align: center;
+	position: static;
+	align: center;
+	text-align: center;
+	width: 100%;
+	height: 20%;
+}
+
+TD {
+	border-style: none;
+	text-align: center;
+	align: center;
+	text-align: center;
+	width: 20%;
+	height: 20%;
+}
+
+TH {
+	border-style: none;
+	text-align: center;
+	align: center;
+	width: 100%;
+	height: 100%;
+}
+
+@font-face {
+	font-family: Chicago;
+	src: url(../fonts/Chicago/ChicagoFLF.ttf);
+}
