@@ -1,0 +1,612 @@
+<html>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+	<head>
+		<script type="text/javascript">
+			// Constants
+			const DISPLAY = 'display';
+			const PLUS = '+';
+			const MINUS = '-';
+			const MULTIPLY = '*';
+			const DIVIDE = '/';
+			const SQUARE = 'square';
+			const PERCENT = '%';
+
+			// Global variables
+			var tempNumber = '0';
+			var operator = null;
+			var isNewNumber = false;
+			var isAlreadyCalculated = true;
+
+			/**
+			 * Check if the string parameter is empty
+			 */
+			function isEmptyString(string){
+				return null === string || string === '';
+			}
+
+			/**
+			 * Plays a simple beep
+			 */
+			function playSound(){
+				var context = new AudioContext();
+				var oscilator = context.createOscillator();
+				var gain = context.createGain();
+				oscilator.connect(gain);
+				gain.connect(context.destination);
+				oscilator.start(0);
+				gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 1.5);
+				setTimeout(function(){ oscilator.stop(); }, 2000);
+			}
+
+			/**
+			 * Clear the calculator's display to value ZERO
+			 */
+			function clearDisplay(){
+				document.getElementById(DISPLAY).value = 0;
+				tempNumber = '0';
+				operator = null;
+			}
+
+			/**
+			 * Verify if display's value is zero to left
+			 */
+			function displayZeroToLeft(){
+				return (document.getElementById(DISPLAY).value.length === 1 && document.getElementById(DISPLAY).value === '0')
+					|| (document.getElementById(DISPLAY).value.length === 2 && document.getElementById(DISPLAY).value === '-0');
+			}
+
+			/**
+			 * Appends a new number or the decimal separator
+			 */
+			function append(value){
+				if(isNaN(value) && value !== ','){
+					warning('The selected value is not a number: ' + value);
+					return;
+				}else if(value === ','){
+					if(!document.getElementById(DISPLAY).value.includes(',')){
+						document.getElementById(DISPLAY).value = isNewNumber ? '0,' : document.getElementById(DISPLAY).value.concat(',');
+					}
+				}else{
+					switch(Number(value)){
+						case 0:
+							if(!displayZeroToLeft()){
+								document.getElementById(DISPLAY).value = isNewNumber ? '0' : document.getElementById(DISPLAY).value.concat(value);
+							}
+							break;
+						default:
+							document.getElementById(DISPLAY).value =
+								displayZeroToLeft()
+									? value
+									: isNewNumber ? value : document.getElementById(DISPLAY).value.concat(value);
+							break;
+					}
+				}
+				isNewNumber = false;
+			}
+
+			/**
+			 * Plays an alert sound and lounch an warning dialog
+			 */
+			function warning(message){
+				playSound();
+				alert('WARNING\n' + message);
+			}
+
+			/**
+			 * Inverts the positive/negative symbol
+			 */
+			function invertValue(){
+				var value = document.getElementById(DISPLAY).value;
+				if(!displayZeroToLeft() && Number(value.replace('.', '').replace(',', '.')) !== 0){
+					if(value.includes(MINUS)){
+						document.getElementById(DISPLAY).value = value.replace(MINUS, '');
+					}else{
+						document.getElementById(DISPLAY).value = MINUS.concat(value);
+					}
+				}
+			}
+
+			/**
+			 * Case 'C' or 'Delete' key is pressed, run clearDisplay().
+			 * Case 'Backspace' key is pressed, removes the rightest display's position
+			 */
+			function clearKeyPressed(key){
+				if(!isEmptyString(key)){
+					if(key === 'Delete' || key.toLowerCase() === 'c'){
+						simulateButton('clearButton');
+						clearDisplay();
+					}else if(key === 'Backspace'){
+						document.getElementById('clearButton').value = '←';
+						simulateButton('clearButton');
+						setTimeout(function(){ document.getElementById('clearButton').value = 'C'; }, 200);
+						if(!isEmptyString(document.getElementById(DISPLAY).value) && document.getElementById(DISPLAY).value.length > 2){
+							document.getElementById(DISPLAY).value = document.getElementById(DISPLAY).value.slice(0, -1);
+							if(displayZeroToLeft()) clearDisplay();
+						}else{
+							if(document.getElementById(DISPLAY).value.includes(MINUS) || !displayZeroToLeft()){
+								clearDisplay();
+							}
+						}
+					}
+				}
+			}
+
+			/**
+			 * Execute the action for SQUARE command key
+			 */
+			function squareKeyPressed(key){
+				if(!isEmptyString(key) && key.toLowerCase() === 's' || key.toLowerCase() === 'v'){
+					simulateButton(SQUARE);
+					setOperator(SQUARE);
+				}
+			}
+
+			/**
+			 * Execute the action for 'Invert' command key
+			 */
+			function inverterKeyPressed(key){
+				if(!isEmptyString(key) && key.toLowerCase() === 'i'){
+					simulateButton('inverterButton');
+					invertValue();
+				}
+			}
+
+			/**
+			 * Operator's Setter
+			 * When apliable, It calculates before setting the operator
+			 */
+			function setOperator(op){
+				switch(op){
+					case PERCENT:
+						if(validatePercent()){
+							calculate(op);
+							isNewNumber = true;
+							isAlreadyCalculated = false;
+						}else{
+							warning('There is no value or operator selected for the percent calculation');
+						}
+						break;
+					case SQUARE:
+						calculate(op);
+						break;
+					default:
+						if(isAlreadyCalculated){
+							tempNumber = document.getElementById(DISPLAY).value.replace('.', ',');
+							document.getElementById(DISPLAY).value = tempNumber;
+							operator = op;
+						}else{
+							calculate(operator);
+							tempNumber = document.getElementById(DISPLAY).value.replace('.', ',');
+							document.getElementById(DISPLAY).value = tempNumber;
+							operator = op;
+						}
+						isNewNumber = true;
+						isAlreadyCalculated = false;
+						break;
+					}
+			}
+
+			/**
+			 * Validates if all variables are ok for the percent calculation
+			 */
+			function validatePercent(){
+				return !isEmptyString(operator) && !isEmptyString(tempNumber);
+			}
+
+			/**
+			 * Calculates based on the saved operator
+			 */
+			function calc(){
+				if(!isEmptyString(operator)) calculate(operator);
+			}
+
+			/**
+			 * Calculates based on the selected operator
+			 */
+			function calculate(op){
+				if(!isEmptyString(op)){
+					var result = 0;
+					var n1 = Number(tempNumber.replace('.', '').replace(',', '.'));
+					var n2 = Number(document.getElementById(DISPLAY).value.replace('.', '').replace(',', '.'));
+					switch(op){
+						case PLUS:
+							result = n1 + n2;
+							break;
+						case MINUS:
+							result = n1 - n2;
+							break;
+						case MULTIPLY:
+							result = n1 * n2;
+							break;
+						case DIVIDE:
+							if(n2 === 0){
+								warning('The divisor cannot be zero');
+							}else{
+								result = n1 / n2;
+							}
+							break;
+						case PERCENT:
+							switch(operator){
+								case PLUS:
+									result = n1 + (n1 * n2 / 100);
+									break;
+								case MINUS:
+									result = n1 - (n1 * n2 / 100);
+									break;
+								case MULTIPLY:
+									result = n1 * (n2 / 100);
+									break;
+								case DIVIDE:
+									result = n1 / (n2 / 100);
+									break;
+							}
+							operator = null;
+							break;
+						case SQUARE:
+							if(n2 < 0){
+								warning('There is no square root from a negative number!');
+								return;
+							}else{
+								result = Math.sqrt(n2);
+							}
+							break;
+					}
+					document.getElementById(DISPLAY).value = result.toString().replace('.', ',');
+					if(!isAlreadyCalculated) tempNumber = n2.toString().replace('.', '').replace(',', '.');
+					isNewNumber = true;
+					isAlreadyCalculated = true;
+				}
+			}
+
+			/**
+			 * Apply actions for keydown events
+			 */
+			function keyEvent(key){
+				if(isNaN(key)){
+					switch(key){ // for non-numerics
+						case ',':
+							simulateButton(key);
+							append(key);
+							break;
+						case PLUS:
+							simulateButton(key);
+							setOperator(key);
+							break;
+						case MINUS:
+							simulateButton(key);
+							setOperator(key);
+							break;
+						case MULTIPLY:
+							simulateButton(key);
+							setOperator(key);
+							break;
+						case DIVIDE:
+							simulateButton(key);
+							setOperator(key);
+							break;
+						case PERCENT:
+							simulateButton(key);
+							setOperator(key);
+							break;
+						case '=':
+							simulateButton('equalsButton');
+							calc();
+							break;
+						default:
+							clearKeyPressed(key);
+							squareKeyPressed(key);
+							inverterKeyPressed(key);
+							break;
+					}
+				}else{ // for numerics
+					simulateButton(key);
+					append(key);
+				}
+			}
+
+			/**
+			 * Simulates button pressed for the key event
+			 */
+			function simulateButton(key){
+				var style = document.getElementById(key).style;
+				simulateButtonPress(key);
+				setTimeout(function(){ simulateButtonRelease(key, style); }, 200);
+			}
+
+			/**
+			 * Change the button's appearance for the pressed button from key event
+			 */
+			function simulateButtonPress(key){
+				document.getElementById(key).style.background = '#000';
+				document.getElementById(key).style.color = '#FFF';
+				document.getElementById(key).style.borderColor = '#FFF';
+				document.getElementById(key).style.fontWeight = 'bold';
+				document.getElementById(key).style.fontSize = '9vh';
+				document.getElementById(key).style.textShadow = '0 0 8px #CCF';
+			}
+
+			/**
+			 * Restore the button's appearance after the key event
+			 */
+			function simulateButtonRelease(key, style){
+				document.getElementById(key).style = style;
+			}
+		</script>
+		<style>
+			*{
+				font-family: monospace;
+			}
+			body{
+				background: #333;
+				padding: 0;
+				margin: 0;
+			}
+			table{
+				height: 100%;
+				width: 100%;
+			}
+			table, tr, th, td{
+				text-align: center !important;
+			}
+			td{
+				width: 25%;
+			}
+			.defaultButton, .operatorButton{
+				height: 100%;
+				width: 100%;
+				border-radius: 16px;
+				border: 4px solid #000;
+			}
+			.defaultButton, .operatorButton, .display{
+				font-size: 10vh;
+			}
+			.defaultButton:active, .operatorButton:active, #clearButton:active, #equalsButton:active{
+				box-shadow: 0 0 8px #000c inset;
+				background: #CCF;
+				color: #000;
+				font-size: 9vh;
+			}
+			.operatorButton{
+				background: #9CF;
+			}
+			.display{
+				width: 100%;
+				height: 100%;
+				text-align: right;
+				border-radius: 16px;
+				background: #CFC;
+				text-shadow: 2px 2px 8px #000c;
+				box-shadow: 2px 2px 8px #000c inset;
+				border: 4px solid;
+				overflow-y: hidden;
+				overflow-x: scroll !important;
+			}
+			#clearButton{
+				background: #C66;
+				color: #FFF;
+				font-weight: bold;
+			}
+			#equalsButton{
+				font-weight: bold;
+				background: #363;
+				color: #FFF;
+			}
+			.tobButton{
+				width: 20% !important;
+			}
+		</style>
+	</head>
+	<body onkeydown="keyEvent(event.key);">
+		<table>
+			<tr>
+				<td colspan="4">
+					<input
+						id="display"
+						class="display"
+						type="text"
+						readonly="true"
+						value="0"
+						/>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="4">
+					<table>
+						<tr>
+							<td class="tobButton">
+								<input
+									id="*"
+									type="button"
+									class="operatorButton"
+									value="&times;"
+									onclick="setOperator(MULTIPLY);"
+									/>
+							</td>
+							<td class="tobButton">
+								<input
+									id="/"
+									type="button"
+									class="operatorButton"
+									value="&#247;"
+									onclick="setOperator(DIVIDE);"
+									/>
+							</td>
+							<td class="tobButton">
+								<input
+									id="%"
+									type="button"
+									class="operatorButton"
+									value="&#37;"
+									onclick="setOperator(this.value);"
+									/>
+							</td>
+							<td class="tobButton">
+								<input
+									id="square"
+									type="button"
+									class="operatorButton"
+									value="&radic;"
+									onclick="setOperator('square');"
+									/>
+							</td>
+							<td class="tobButton">
+								<input
+									id="clearButton"
+									type="button"
+									class="defaultButton"
+									value="C"
+									onclick="clearDisplay();"
+									/>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<input
+						id="7"
+						type="button"
+						class="defaultButton"
+						value="7"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id="8"
+						type="button"
+						class="defaultButton"
+						value="8"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id="9"
+						type="button"
+						class="defaultButton"
+						value="9"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id="+"
+						type="button"
+						class="operatorButton"
+						value="+"
+						onclick="setOperator(this.value);"
+						/>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<input
+						id="4"
+						type="button"
+						class="defaultButton"
+						value="4"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id="5"
+						type="button"
+						class="defaultButton"
+						value="5"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id="6"
+						type="button"
+						class="defaultButton"
+						value="6"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id="-"
+						type="button"
+						class="operatorButton"
+						value="-"
+						onclick="setOperator(this.value);"
+						/>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<input
+						id="1"
+						type="button"
+						class="defaultButton"
+						value="1"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id="2"
+						type="button"
+						class="defaultButton"
+						value="2"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id="3"
+						type="button"
+						class="defaultButton"
+						value="3"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td rowspan="2">
+					<input
+						id="equalsButton"
+						type="button"
+						class="defaultButton"
+						value="="
+						onclick="calc();"
+						/>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<input
+						id="inverterButton"
+						type="button"
+						class="defaultButton"
+						value="&#xB1;"
+						onclick="invertValue();"
+						/>
+				</td>
+				<td>
+					<input
+						id="0"
+						type="button"
+						class="defaultButton"
+						value="0"
+						onclick="append(this.value);"
+						/>
+				</td>
+				<td>
+					<input
+						id=","
+						type="button"
+						class="defaultButton"
+						value=","
+						onclick="append(this.value);"
+						/>
+				</td>
+			</tr>
+		</table>
+	</body>
+	<script type="text/javascript">
+	</script>
+</html>
